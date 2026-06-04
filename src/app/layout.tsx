@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "DailyXP | Level up your daily habits",
   description: "DailyXP transforms your routines into a game. Build streaks, earn XP, and unlock your potential with the most satisfying habit tracker ever built.",
+  icons: {
+    icon: "/DailyXP.png",
+  },
 }
 
 export default function RootLayout({

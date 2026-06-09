@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { format } from "date-fns"
+import Footer from "@/components/landing/Footer"
 
 export default function WallOfFame() {
   const [users, setUsers] = useState<PublicProfileData[]>([])
@@ -285,6 +286,7 @@ export default function WallOfFame() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   )
 }

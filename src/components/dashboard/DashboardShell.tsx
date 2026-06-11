@@ -9,7 +9,7 @@ import ZoneDNotepad from "./ZoneDNotepad"
 import { motion, useMotionValue, useSpring } from "framer-motion"
 
 export default function DashboardShell() {
-  const { habits, logs, loading, toggleHabit, updateNote, createHabit } = useDashboardData()
+  const { habits, logs, loading, toggleHabit, updateNote, createHabit, updateHabit, deleteHabit } = useDashboardData()
   const [selectedDate, setSelectedDate] = useState(new Date())
 
   // Dynamic Glow State
@@ -68,6 +68,8 @@ export default function DashboardShell() {
           onDateSelect={setSelectedDate} 
           onToggleHabit={toggleHabit}
           onCreateHabit={createHabit}
+          onUpdateHabit={updateHabit}
+          onDeleteHabit={deleteHabit}
         />
         
         <ZoneBGrid 

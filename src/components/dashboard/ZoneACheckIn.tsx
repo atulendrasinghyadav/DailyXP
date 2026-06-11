@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths, isAfter, getDayOfYear } from "date-fns"
-import { Plus, Check, ChevronLeft, ChevronRight } from "lucide-react"
-import { Habit, DailyLog } from "@/types/dashboard"
+import { Plus, Check, ChevronLeft, ChevronRight, Edit3, Trash2 } from "lucide-react"
+import { Habit, UI_DailyLog } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
 
 export const habitColors: Record<string, { bg: string, border: string, shadow: string, text: string, glow: string }> = {
@@ -18,11 +18,13 @@ export const habitColors: Record<string, { bg: string, border: string, shadow: s
 
 interface ZoneAProps {
   habits: Habit[]
-  logs: Record<string, DailyLog>
+  logs: Record<string, UI_DailyLog>
   selectedDate: Date
   onDateSelect: (date: Date) => void
   onToggleHabit: (habitId: string, date: Date) => void
   onCreateHabit: (name: string, color: string) => void
+  onUpdateHabit: (habitId: string, name: string, color: string) => void
+  onDeleteHabit: (habitId: string) => void
 }
 
 export default function ZoneACheckIn({ 
@@ -31,7 +33,9 @@ export default function ZoneACheckIn({
   selectedDate, 
   onDateSelect, 
   onToggleHabit,
-  onCreateHabit
+  onCreateHabit,
+  onUpdateHabit,
+  onDeleteHabit
 }: ZoneAProps) {
   const dateStr = format(selectedDate, "yyyy-MM-dd")
   const currentLog = logs[dateStr]
@@ -39,6 +43,7 @@ export default function ZoneACheckIn({
   const isFutureSelected = isAfter(selectedDate, new Date()) && !isToday(selectedDate)
   
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null)
 
   // Generate days for the spine (current month)
   const monthStart = startOfMonth(selectedDate)
@@ -171,12 +176,19 @@ export default function ZoneACheckIn({
                   </AnimatePresence>
                 </button>
 
-                <span className={cn(
-                  "text-[11px] font-bold text-center max-w-[72px] truncate leading-tight transition-colors duration-300",
-                  isChecked ? "text-zinc-50" : "text-zinc-200"
-                )}>
-                  {habit.name}
-                </span>
+                <button
+                  onClick={() => setEditingHabit(habit)}
+                  className="flex flex-col items-center justify-center gap-0.5 mt-2 group/editbtn px-0.5 w-full"
+                  title="Edit habit"
+                >
+                  <span className={cn(
+                    "text-[10px] font-bold text-center w-full line-clamp-2 leading-tight transition-colors duration-300 group-hover/editbtn:text-cyan-300 min-h-[24px]",
+                    isChecked ? "text-zinc-50" : "text-zinc-200"
+                  )}>
+                    {habit.name}
+                  </span>
+                  <Edit3 className="w-2 h-2 opacity-0 group-hover/editbtn:opacity-100 text-cyan-400 transition-opacity" />
+                </button>
               </div>
             )
           })}
@@ -256,7 +268,119 @@ export default function ZoneACheckIn({
           </div>
         )}
       </AnimatePresence>
+      {/* Edit Habit Modal */}
+      <AnimatePresence>
+        {editingHabit && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingHabit(null)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm bg-zinc-900 border border-zinc-700/70 rounded-2xl p-6 shadow-2xl shadow-black/40"
+            >
+              <h3 className="text-xl font-bold text-zinc-50 mb-1">Edit Habit</h3>
+              <p className="text-sm text-zinc-400 mb-5">Change details or remove it</p>
+              <EditHabitForm 
+                habit={editingHabit}
+                onSave={(name, color) => {
+                  onUpdateHabit(editingHabit.id, name, color)
+                  setEditingHabit(null)
+                }} 
+                onDelete={() => {
+                  onDeleteHabit(editingHabit.id)
+                  setEditingHabit(null)
+                }}
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
+  )
+}
+
+function EditHabitForm({ habit, onSave, onDelete }: { habit: Habit, onSave: (name: string, color: string) => void, onDelete: () => void }) {
+  const [name, setName] = useState(habit.name)
+  const [color, setColor] = useState(habit.color)
+  const colors = ["emerald", "blue", "purple", "amber", "rose", "cyan"]
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); if (name) onSave(name, color); }} className="space-y-5">
+      <div>
+        <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Habit Name</label>
+        <input 
+          autoFocus
+          value={name}
+          onChange={e => setName(e.target.value)}
+          className="w-full bg-zinc-950/80 border border-zinc-700/70 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Color Theme</label>
+        <div className="flex gap-2.5">
+          {colors.map(c => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setColor(c)}
+              className={cn(
+                "w-9 h-9 rounded-full border-2 transition-all duration-200",
+                color === c ? "border-white scale-110 shadow-lg" : "border-transparent opacity-50 hover:opacity-80",
+                habitColors[c]?.bg || "bg-zinc-500"
+              )}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col gap-3 pt-2">
+        <button 
+          type="submit"
+          disabled={!name.trim()}
+          className={cn(
+            "w-full font-bold py-3 rounded-xl transition-all duration-200",
+            name.trim()
+              ? "bg-white text-zinc-900 hover:bg-zinc-200 shadow-lg shadow-white/10"
+              : "bg-zinc-800 text-zinc-500 cursor-not-allowed"
+          )}
+        >
+          Save Changes
+        </button>
+        {isDeleting ? (
+          <div className="flex gap-2">
+            <button 
+              type="button"
+              onClick={onDelete}
+              className="flex-1 font-bold py-3 rounded-xl bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30 transition-all duration-200"
+            >
+              Confirm
+            </button>
+            <button 
+              type="button"
+              onClick={() => setIsDeleting(false)}
+              className="flex-1 font-bold py-3 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-all duration-200"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button 
+            type="button"
+            onClick={() => setIsDeleting(true)}
+            className="w-full font-bold py-3 flex items-center justify-center gap-2 rounded-xl text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-200"
+          >
+            <Trash2 className="w-4 h-4" /> Delete Habit
+          </button>
+        )}
+      </div>
+    </form>
   )
 }
 

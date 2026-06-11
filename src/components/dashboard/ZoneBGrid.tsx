@@ -18,13 +18,13 @@ import {
   eachMonthOfInterval,
   differenceInCalendarWeeks
 } from "date-fns"
-import { Habit, DailyLog, ViewType } from "@/types/dashboard"
+import { Habit, UI_DailyLog, ViewType } from "@/types/dashboard"
 import { cn } from "@/lib/utils"
 import { habitColors } from "./ZoneACheckIn"
 
 interface ZoneBProps {
   habits: Habit[]
-  logs: Record<string, DailyLog>
+  logs: Record<string, UI_DailyLog>
   selectedDate: Date
 }
 
@@ -84,6 +84,15 @@ function WeeklyView({ habits, logs, selectedDate }: ZoneBProps) {
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
   const dayNames = ["S", "M", "T", "W", "T", "F", "S"]
 
+  const weeklyColorMap: Record<string, { bg: string, border: string, dot: string, indicator: string }> = {
+    emerald: { bg: "bg-emerald-500/35", border: "border-emerald-400/60", dot: "bg-emerald-200", indicator: "bg-emerald-500" },
+    blue: { bg: "bg-blue-500/35", border: "border-blue-400/60", dot: "bg-blue-200", indicator: "bg-blue-500" },
+    purple: { bg: "bg-purple-500/35", border: "border-purple-400/60", dot: "bg-purple-200", indicator: "bg-purple-500" },
+    amber: { bg: "bg-amber-500/35", border: "border-amber-400/60", dot: "bg-amber-200", indicator: "bg-amber-500" },
+    rose: { bg: "bg-rose-500/35", border: "border-rose-400/60", dot: "bg-rose-200", indicator: "bg-rose-500" },
+    cyan: { bg: "bg-cyan-500/35", border: "border-cyan-400/60", dot: "bg-cyan-200", indicator: "bg-cyan-500" },
+  }
+
   return (
     <div>
       <div className="grid grid-cols-[112px_1fr] gap-3 mb-3">
@@ -104,38 +113,41 @@ function WeeklyView({ habits, logs, selectedDate }: ZoneBProps) {
       </div>
 
       <div className="space-y-4">
-        {habits.map((habit) => (
-          <div key={habit.id} className="grid grid-cols-[112px_1fr] items-center gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className={cn("w-2.5 h-2.5 rounded-full shadow-[0_0_6px_currentColor]", `bg-${habit.color}-500`)} />
-              <span className="text-sm text-zinc-100 font-medium truncate">{habit.name}</span>
-            </div>
-            <div className="grid grid-cols-7 gap-2">
-              {weekDays.map((day) => {
-                const dateKey = format(day, "yyyy-MM-dd")
-                const isDone = logs[dateKey]?.completedHabits.includes(habit.id)
-                const isFut = day > new Date() && !isToday(day)
+        {habits.map((habit) => {
+          const colors = weeklyColorMap[habit.color] || weeklyColorMap.emerald
+          return (
+            <div key={habit.id} className="grid grid-cols-[112px_1fr] items-center gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className={cn("w-2.5 h-2.5 rounded-full shadow-[0_0_6px_currentColor]", colors.indicator)} />
+                <span className="text-sm text-zinc-100 font-medium truncate">{habit.name}</span>
+              </div>
+              <div className="grid grid-cols-7 gap-2">
+                {weekDays.map((day) => {
+                  const dateKey = format(day, "yyyy-MM-dd")
+                  const isDone = logs[dateKey]?.completedHabits.includes(habit.id)
+                  const isFut = day > new Date() && !isToday(day)
 
-                return (
-                  <div
-                    key={dateKey}
-                    className={cn(
-                      "aspect-square rounded-lg border transition-all relative",
-                      isDone
-                        ? `bg-${habit.color}-500/35 border-${habit.color}-400/60 shadow-[inset_0_0_8px_rgba(255,255,255,0.08)]`
-                        : "bg-slate-800/75 border-slate-500/35 hover:border-slate-300/45",
-                      isFut && "opacity-25 cursor-not-allowed"
-                    )}
-                  >
-                    {isDone && (
-                      <div className={cn("w-2 h-2 rounded-full absolute top-1.5 right-1.5 shadow-[0_0_8px_currentColor]", `bg-${habit.color}-200`)} />
-                    )}
-                  </div>
-                )
-              })}
+                  return (
+                    <div
+                      key={dateKey}
+                      className={cn(
+                        "aspect-square rounded-lg border transition-all relative",
+                        isDone
+                          ? `${colors.bg} ${colors.border} shadow-[inset_0_0_8px_rgba(255,255,255,0.08)]`
+                          : "bg-slate-800/75 border-slate-500/35 hover:border-slate-300/45",
+                        isFut && "opacity-25 cursor-not-allowed"
+                      )}
+                    >
+                      {isDone && (
+                        <div className={cn("w-2 h-2 rounded-full absolute top-1.5 right-1.5 shadow-[0_0_8px_currentColor]", colors.dot)} />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

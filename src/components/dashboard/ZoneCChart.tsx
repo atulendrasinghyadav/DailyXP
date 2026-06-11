@@ -12,13 +12,13 @@ import {
   startOfYear,
   endOfYear
 } from "date-fns"
-import { Habit, DailyLog, ViewType } from "@/types/dashboard"
+import { Habit, UI_DailyLog, ViewType } from "@/types/dashboard"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 interface ZoneCProps {
   habits: Habit[]
-  logs: Record<string, DailyLog>
+  logs: Record<string, UI_DailyLog>
   selectedDate: Date
 }
 

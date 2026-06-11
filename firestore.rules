@@ -1,25 +1,70 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
 
-    // Public profile document: shareable, read/list for everyone (Wall of Fame).
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users: read own, write own
     match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      
+      match /dailyNotes/{date} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+    
+    // Usernames: public read, create-once
+    match /usernames/{username} {
       allow read: if true;
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.uid;
     }
     
-    // Match any document in the 'users' collection or its subcollections
-    match /users/{userId}/{document=**} {
-      
-      // Allow read/write only if the user is authenticated 
-      // AND their Firebase Auth UID matches the document's userId
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
+    // Habits: CRUD own, public read if enabled
+    match /habits/{habitId} {
+      allow read: if isAuthenticated() && (
+        resource == null ||
+        resource.data.userId == request.auth.uid || 
+        (resource.data.status == "active" && get(/databases/$(database)/documents/users/$(resource.data.userId)).data.publicProfile == true)
+      );
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isOwner(resource.data.userId);
     }
     
-    // Default deny for everything else
+    // Logs: CRUD own only
+    match /logs/{logId} {
+      // Allow get even if document doesn't exist yet (returns null resource)
+      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      // Allow list (queries) only for own logs
+      allow list: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Allow writes only for own logs
+      allow write: if isAuthenticated() && (
+        (resource != null && resource.data.userId == request.auth.uid) || 
+        (request.resource != null && request.resource.data.userId == request.auth.uid)
+      );
+    }
+    
+    // Freezes: CRUD own only
+    match /freezes/{freezeId} {
+      allow get: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow list: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow write: if isAuthenticated() && (
+        (resource != null && resource.data.userId == request.auth.uid) || 
+        (request.resource != null && request.resource.data.userId == request.auth.uid)
+      );
+    }
+
+    match /habitArchives/{habitId} {
+      allow read: if isOwner(resource.data.userId);
+      allow write: if false; 
+    }
+    
+    // Default deny
     match /{document=**} {
       allow read, write: if false;
     }

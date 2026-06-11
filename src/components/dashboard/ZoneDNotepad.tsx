@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { format } from "date-fns"
-import { DailyLog } from "@/types/dashboard"
+import { UI_DailyLog } from "@/types/dashboard"
 import { FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ZoneDProps {
-  logs: Record<string, DailyLog>
+  logs: Record<string, UI_DailyLog>
   selectedDate: Date
   onUpdateNote: (note: string, date: Date) => void
 }
